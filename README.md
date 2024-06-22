@@ -69,4 +69,4 @@ This project was inspired by the need for personalized movie recommendations.
 Special thanks to Muoyheang Chhea for contributions to the project.
 
 **Note**
-The images in this web application are not the exact posters from the movies themselves, they are just random images imported from other website since the ml-1ook dataset does not has movies images.
+The images in this web application are not the exact posters from the movies themselves, they are just random images imported from other website since the ml-100k dataset does not has movies images.
