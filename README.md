@@ -2,7 +2,7 @@
 MovieMate is a personalized movie recommendation system that helps users discover new movies based on their preferences and similarities to their favorites.
 
 **Features**
--Personalized Recommendations: Get movie suggestions tailored to your taste.
+\n-Personalized Recommendations: Get movie suggestions tailored to your taste.
 -Discover Similar Movies: Find films that share characteristics with your selected favorites.
 -Movie Explorer: Explore movies by genres to discover new favorites.
 -Interactive Visualizations: Visualize movie similarities and trends.
