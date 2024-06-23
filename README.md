@@ -39,7 +39,7 @@ MovieMate is a personalized movie recommendation system that helps users discove
 -Clone the Repository
 
 
-git clone: https://github.com/yourusername/moviemate.git
+git clone: https://github.com/yourusername/MovieSimilar.git
 
 
 -Ensure you have Python 3.7+ installed.
