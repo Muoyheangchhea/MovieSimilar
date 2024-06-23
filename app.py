@@ -6,7 +6,7 @@ from pyspark import SparkConf, SparkContext
 from streamlit_option_menu import option_menu
 import random
 
-# Spark initialization functions
+
 def init_spark():
     conf = SparkConf().setMaster("local[*]").setAppName("MovieSimilarities")
     sc = SparkContext.getOrCreate(conf=conf)
@@ -218,7 +218,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
 with st.sidebar:
     st.markdown('<div class="sidebar-title">🎥 MovieMate</div>', unsafe_allow_html=True)
 
@@ -249,7 +248,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-# Main content
+
 if selected == "Homepage":
     st.title("🎥 MovieMate: Your Personal Movie Recommender")
     
@@ -337,7 +336,7 @@ elif selected == "Discover Similar Movies":
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Plotting graph
+            
             similar_df = pd.DataFrame(similar_movies)
             fig = px.bar(similar_df, x='Movie Name', y='Similarity Score', title=f'Similar Movies to {movie_names[movie_id]}')
             st.plotly_chart(fig, use_container_width=True)
