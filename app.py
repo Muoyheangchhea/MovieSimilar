@@ -6,6 +6,7 @@ from pyspark import SparkConf, SparkContext
 from streamlit_option_menu import option_menu
 import random
 
+# Spark initialization functions
 def init_spark():
     conf = SparkConf().setMaster("local[*]").setAppName("MovieSimilarities")
     sc = SparkContext.getOrCreate(conf=conf)
@@ -92,123 +93,152 @@ def get_movie_genres():
             genres[movie_id] = movie_genres
     return genres
 
-def make_pairs(user_ratings):
-    (user, ratings) = user_ratings
-    ratings = list(ratings)
-    pairs = []
-    for i in range(len(ratings)):
-        for j in range(i + 1, len(ratings)):
-            pairs.append(((ratings[i][0], ratings[j][0]), (ratings[i][1], ratings[j][1])))
-    return pairs
-
-def filter_duplicates(movie_pair):
-    movie1, movie2 = movie_pair[0]
-    return movie1 < movie2
-
-st.set_page_config(page_title="MovieMate: Your Personal Movie Recommender", layout="wide", page_icon="🎬")
+# Streamlit UI and CSS styling
+st.set_page_config(page_title="MovieMate: Your Personal Movie Recommender", layout="wide", page_icon="🎥")
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap');
+    
+    * {
+        font-family: 'Poppins', sans-serif;
+    }
+    
     .stApp {
-        background-color: #f8f9fa;
-        color: #000000;
-    }
-    .stSelectbox, .stSlider {
         background-color: #ffffff;
-        border-radius: 5px;
-        padding: 10px;
+        color: #333333;
     }
-    .stButton>button {
-        background-color: #007bff;
+    
+    .stSelectbox, .stSlider {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .stButton > button {
+        background-color: #4CAF50;
         color: white;
-        border-radius: 20px;
-        padding: 10px 20px;
-        font-weight: bold;
+        border-radius: 25px;
+        padding: 12px 24px;
+        font-weight: 500;
         border: none;
+        transition: all 0.3s ease;
     }
+    
+    .stButton > button:hover {
+        background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
     .movie-card {
         background-color: #ffffff;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e0e0e0;
     }
+    
+    .movie-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    
     .stSidebar {
-        background-color: #ffffff;
-        border-right: 1px solid #ddd;
+        background-color: #f8f9fa;
+        border-right: 1px solid #e0e0e0;
     }
+    
     .stSidebar .css-1d391kg {
-        padding: 10px;
+        padding: 20px;
     }
-    .stSidebar .css-1d391kg h3, .stSidebar .css-1d391kg h4 {
-        color: #333;
-    }
-    .css-1v3fvcr {
-        margin-bottom: 30px;
-    }
-    /* Sidebar Styles */
+    
     .sidebar-title {
         font-size: 28px;
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 20px;
+        font-weight: 700;
+        color: #4CAF50;
+        margin-bottom: 30px;
         text-align: center;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
+    
     .sidebar-menu {
-        background-color: #f8f9fa;
-        border-radius: 10px;
+        background-color: #ffffff;
+        border-radius: 12px;
         padding: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 20px;
     }
+    
     .sidebar-menu .nav-link {
         margin: 8px 0;
-        border-radius: 5px;
+        border-radius: 8px;
         transition: all 0.3s;
         font-weight: 500;
+        color: #333333;
     }
+    
     .sidebar-menu .nav-link:hover {
-        background-color: #e9ecef;
+        background-color: #f1f3f5;
         transform: translateX(5px);
     }
+    
     .sidebar-menu .nav-link-selected {
-        background-color: #007bff !important;
+        background-color: #4CAF50 !important;
         color: white !important;
     }
+    
     .sidebar-menu .nav-link-selected .icon {
         color: white !important;
     }
+    
     .sidebar-footer {
         color: #6c757d;
         font-size: 12px;
-        border-top: 1px solid #dee2e6;
-        padding-top: 10px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 15px;
         margin-top: 20px;
+        text-align: center;
+    }
+    
+    h1, h2, h3 {
+        color: #2c3e50;
+    }
+    
+    .info-box {
+        background-color: #e8f5e9;
+        border-left: 5px solid #4CAF50;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# Sidebar
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">🎬 MovieMate</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title">🎥 MovieMate</div>', unsafe_allow_html=True)
 
     selected = option_menu(
         menu_title=None,
         options=["Homepage", "Discover Similar Movies", "Movie Explorer"],
-        icons=["house-fill", "search", "film"],
+        icons=["house-fill", "search", "compass"],
         menu_icon="camera-reels-fill",
         default_index=0,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
-            "icon": {"color": "#000000", "font-size": "20px"}, 
+            "icon": {"color": "#333333", "font-size": "20px"}, 
             "nav-link": {
                 "font-size": "16px",
                 "text-align": "left",
                 "margin": "8px 0",
                 "padding": "10px 15px",
-                "--hover-color": "#e9ecef"
+                "--hover-color": "#f1f3f5"
             },
-            "nav-link-selected": {"background-color": "#007bff", "color": "white", "font-weight": "600"},
+            "nav-link-selected": {"background-color": "#4CAF50", "color": "white", "font-weight": "600"},
         }
     )
 
@@ -219,24 +249,59 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+# Main content
 if selected == "Homepage":
-    st.title("📽️ MovieMate: Your Personal Movie Recommender")
+    st.title("🎥 MovieMate: Your Personal Movie Recommender")
     
     st.markdown("""
-    ### 👋 Welcome to MovieMate!
+    <div class="info-box">
+        <h3>🌟 Welcome to MovieMate!</h3>
+        <p>Embark on a personalized journey through the world of cinema. MovieMate is your intelligent companion in the vast universe of movies, 
+        designed to uncover hidden gems and reconnect you with forgotten favorites. Our cutting-edge algorithms dive deep into user preferences 
+        to bring you recommendations that resonate with your unique taste.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.header("🚀 Explore MovieMate Features")
+    col1, col2 = st.columns(2)
     
-    Discover your next favorite movie with our advanced recommendation system. 
-    MovieMate is not just another movie recommendation system; it's your personal guide to the vast world of cinema. 
-    Our state-of-the-art algorithms analyze user ratings and preferences to bring you tailored movie suggestions that align perfectly with your taste.
+    with col1:
+        st.markdown("""
+        - **🎯 Tailored Recommendations**: Experience personalized movie suggestions that align with your viewing history and preferences.
+        - **🔍 Similar Movie Discovery**: Uncover films that share DNA with your favorites, expanding your cinematic horizons.
+        """)
+    
+    with col2:
+        st.markdown("""
+        - **🌈 Genre Deep Dives**: Explore specific genres to find new favorites and hidden classics.
+        - **📊 Interactive Insights**: Visualize movie connections and trends to understand your taste better.
+        """)
+    
+    st.markdown("""
+    <div style="text-align: center; margin-top: 30px; padding: 20px; background-color: #e8f5e9; border-radius: 10px;">
+        <h2 style="color: #4CAF50;">Our Promise</h2>
+        <p style="font-size: 18px; font-style: italic;">
+            "Every frame tells a story, every story finds its audience. Let MovieMate be your guide to cinematic wonders tailored just for you."
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    ### 🌟 Our Key Features
-
-    - **Personalized Recommendations**: Get movie suggestions tailored to your taste.
-    - **Discover Similar Movies**: Discover films that share characteristics with your favorites.
-    - **Movie Explorer**: Dive into specific genres and uncover new favorites.
-    - **Interactive Visualizations**: See movie similarities and trends at a glance.
-    ##### *Start your journey with MovieMate today and transform the way you discover and enjoy movies!🫶*
-    """)
+    st.markdown("""
+    ### 🎥 Why MovieMate?
+    
+    In a world overflowing with content, finding the right movie can be overwhelming. MovieMate cuts through the noise, 
+    offering a curated experience that grows smarter with every interaction. Whether you're a casual viewer or a cinephile, 
+    our platform adapts to your taste, ensuring every recommendation is a potential new favorite.
+    
+    ### 🌈 Start Your Journey
+    
+    Ready to transform your movie-watching experience? Dive into MovieMate and let the magic of cinema unfold before your eyes. 
+    With each click, like, and watch, you're one step closer to discovering your next beloved film.
+    
+    <div style="text-align: center; margin-top: 30px; font-weight: bold; font-size: 20px; color: #4CAF50;">
+        MovieMate: Where Every Recommendation Is a Standing Ovation Waiting to Happen! 🎭🍿
+    </div>
+    """, unsafe_allow_html=True)
 
 elif selected == "Discover Similar Movies":
     st.title("🔍 Discover Similar Movies")
@@ -258,26 +323,23 @@ elif selected == "Discover Similar Movies":
             with st.spinner('Finding similar movies...'):
                 results = find_similar_movies(sc)
                 similar_movies = get_similar_movies(movie_id, results, movie_names, top_n)
+            
             st.success(f"Top {top_n} similar movies for '{movie_names[movie_id]}':")
             
             for movie in similar_movies:
                 with st.container():
-                    col1, col2 = st.columns([1, 3])
-                    with col1:
-                        st.image(f"https://picsum.photos/200/300?random={movie['Movie ID']}&cachebuster={random.randint(1, 1000)}", width=150)
-                    with col2:
-                        st.markdown(f"### {movie['Movie Name']}")
-                        st.write(f"Similarity Score: {movie['Similarity Score']:.2f}")
-                        st.write(f"Co-occurrence: {movie['Co-occurrence']}")
-                        genres = [genre_list[i] for i in movie_genres.get(movie['Movie ID'], [])]
-                        st.write(f"Genres: {', '.join(genres)}")
-                st.markdown("---")
+                    st.markdown(f"""
+                    <div class="movie-card">
+                        <h3>{movie['Movie Name']}</h3>
+                        <p><strong>Similarity Score:</strong> {movie['Similarity Score']:.2f}</p>
+                        <p><strong>Co-occurrence:</strong> {movie['Co-occurrence']}</p>
+                        <p><strong>Genres:</strong> {', '.join([genre_list[i] for i in movie_genres.get(movie['Movie ID'], [])])}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            df = pd.DataFrame(similar_movies)
-            fig = px.bar(df, x='Movie Name', y='Similarity Score', 
-                         hover_data=['Co-occurrence'], 
-                         title=f"Similarity Scores for Movies Similar to '{movie_names[movie_id]}'")
-            fig.update_layout(xaxis_tickangle=-45)
+            # Plotting graph
+            similar_df = pd.DataFrame(similar_movies)
+            fig = px.bar(similar_df, x='Movie Name', y='Similarity Score', title=f'Similar Movies to {movie_names[movie_id]}')
             st.plotly_chart(fig, use_container_width=True)
 
     else:
@@ -296,24 +358,27 @@ elif selected == "Movie Explorer":
                        if all(genre_list.index(genre) in genres for genre in selected_genres)]
 
     if filtered_movies:
-        st.write(f"Found {len(filtered_movies)} movies in the selected genres.")
+        st.success(f"Found {len(filtered_movies)} movies in the selected genres.")
         
         sample_size = min(10, len(filtered_movies))
         sample_movies = random.sample(filtered_movies, sample_size)
         
         for movie_id in sample_movies:
             with st.container():
-                col1, col2 = st.columns([1, 3])
-                with col1:
-                    st.image(f"https://picsum.photos/200/300?random={movie_id}&cachebuster={random.randint(1, 1000)}", width=150)
-                with col2:
-                    st.markdown(f"### {movie_names[movie_id]}")
-                    genres = [genre_list[i] for i in movie_genres[movie_id]]
-                    st.write(f"Genres: {', '.join(genres)}")
-            st.markdown("---")
+                st.markdown(f"""
+                <div class="movie-card">
+                    <h3>{movie_names[movie_id]}</h3>
+                    <p><strong>Genres:</strong> {', '.join([genre_list[i] for i in movie_genres[movie_id]])}</p>
+                </div>
+                """, unsafe_allow_html=True)
     else:
-        st.write("No movies found with the selected genres. Try selecting different genres.")
+        st.warning("No movies found matching the selected genres.")
 
+    if filtered_movies:
+        genre_counts = {genre: sum(1 for movie_id in filtered_movies if genre_list.index(genre) in movie_genres[movie_id]) for genre in genre_list[1:]}
+        genre_df = pd.DataFrame(list(genre_counts.items()), columns=['Genre', 'Count'])
+        fig = px.bar(genre_df, x='Genre', y='Count', title='Genre Distribution of Filtered Movies')
+        st.plotly_chart(fig, use_container_width=True)
 
 def cleanup():
     try:
